@@ -31,6 +31,7 @@ pip install seedtools
 ## How to load data from directory 
 
 ``` python 
+from seedtools import load_seed
 data = load_seed("data_science_jobs.csv")
 print(data.data)
 ```
