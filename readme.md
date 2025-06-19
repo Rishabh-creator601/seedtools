@@ -27,6 +27,14 @@ pip install seedtools
 
 ```
 
+### SET `Data Path` once and use it anywhere 
+
+``` python
+from seedtools import configure_data_path, reset_path
+
+reset_path() # default path 
+configure_data_path("you path")
+```
 
 ## How to load data from directory 
 
