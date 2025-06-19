@@ -9,7 +9,7 @@ from seedtools import *
 
 
 
-print(connect("adult_seed.json"))
+
 
 
 
