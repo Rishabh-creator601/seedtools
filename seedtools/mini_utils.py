@@ -8,12 +8,21 @@ DATA_PATH= return_data_path()
 
 def print_u(text):
     rich_print(f"[underline]{text}[/underline]")
+    
+    
+    
+    
 
 
 def read_json(file_path):
     """Read a JSON file and return its content."""
     with open(file_path, 'r') as file:
-        return json.load(file)
+        content =  file.read()
+        
+        if content.strip() == "":
+            print("FOUND EMPTY STRING")
+        else:
+            return json.loads(content)
     
 
 def write_json(data, file_path):
@@ -55,7 +64,10 @@ def mapper(df,cols_map,status="speak"):
         
 
 def connect(filename):
-    return os.path.join(DATA_PATH,filename)
+    path_ = os.path.join(DATA_PATH,filename)
+    path_=  str(path_).replace("\\","/")
+    return path_
+    
 
 
 def get_name(filename):

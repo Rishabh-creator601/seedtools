@@ -20,12 +20,15 @@ def show_all_datasets(type="csv",show=True,wise="shape"):
     
     for obj in dirs :
         
-        if get_ext(obj)[1:] in ["csv","tsv"] and type == "csv":
+        if obj.endswith(".csv") and type == "csv":
             
             seed_status =  "✔" if check_data_mini(obj) else "❌"
             
-            if check_data_mini(obj) == True :
-                (shape,cls,desc) =  read_seed_extended(obj)
+            if seed_status == "✔" :
+                try:
+                    (shape,cls,desc) =  read_seed_extended(obj)
+                except:
+                    print(f"error in file : {obj}")
                 item_data  =  {"shape":shape,"columns":cls,"cls":cls,"desc":desc}
                 item_data["seed"] =  seed_status
                 obj_item = f''' {obj} -: {item_data[wise]}'''

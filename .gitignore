@@ -3,3 +3,5 @@ dist/
 build.bat
 push.bat
 info.txt
+__pycache__
+
