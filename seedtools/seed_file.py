@@ -1,4 +1,4 @@
-import os
+import os,warnings
 from .mini_utils import *
 import pandas as pd
 from rich import print as rich_print
@@ -8,6 +8,8 @@ from .data_path_settings import return_data_path
 
 
 DATA_PATH= return_data_path()
+
+
 
 # to check data file and seed file
 def check_data(filename):
@@ -62,6 +64,7 @@ def register_csv(data,filename,desc=None):
     data_seed["desc"] =  desc
     data_seed["version_names"] = []  # new names version will be added here
     
+    
     seed_name  = write_seed(filename,data_seed)
     print(f"Seed `{seed_name}`  Registered Succesfully")
     
@@ -80,6 +83,7 @@ class RegisterVersion:
                 self.new_data["version_names"] = read_version_names(self.filename) + [self.version_name]
                 self.new_data.setdefault(self.version_name, {})["drop_cols"] = []
                 self.new_data.setdefault(self.version_name, {})["map_cols"] = {}
+                self.new_data.setdefault(self.version_name, {})["text_cols"] = []
                 
         else:
             print(f"Version `{version_name}` already exists or seed file is not registered.")
@@ -100,6 +104,14 @@ class RegisterVersion:
                 self.new_data[self.version_name]["map_cols"] = cols_map 
         except KeyError:
             print("Version name is already registered, please choose a different name.")
+    
+    def clean_cols(self,cols=[]):
+        try:
+            if self.version_name is not None:
+                self.new_data[self.version_name]["text_cols"] = cols 
+        except KeyError:
+            print("Version name is already registered, please choose a different name.")
+        
     
     
     def execute(self):
@@ -133,30 +145,73 @@ class RegisterVersion:
         
         
 class load_seed:
-    def __init__(self,filename,version=None):
-        seed_status = check_data(filename)
-        self.filename =  filename 
+    def __init__(self,filename,version=None,quiet=False):
         
-        if version in read_version_names(filename) and seed_status:
-            self.data =  self.read_data_file(self.filename,version)
-            display_Seed_file(filename)
-        elif seed_status:
-            self.data =  pd.read_csv(connect(self.filename))
-            print_u(f"Version Name : {version}  Not Found")
-            display_Seed_file(filename)
+        seed_status = check_data_mini(filename)
+        self.filename =  filename
+        self.termination_status =  False
+        self.cols_status = {"drop_cols":False,
+                          "map_cols":False,
+                          "text_cols":False}
+        
+        self.cols = {"drop_cols":[],"map_cols":{},"text_cols":[]}
+
+             
+        ## VERSION != NONE + SEED STATUS 
+        if version is not None and seed_status==True:
+            if version in  read_version_names(filename):
+                self.data =  self.read_data_file(self.filename,version,quiet)
+                quiet_log(f"READING VERSION : {version}",quiet)
+                self.terminate_version = True
+                
+                for col in self.cols_status.keys():
+                    if self.cols_status[col] == False:
+                        print_u(f"Column not found : {col}  Re Registering seed file")
+                        self.register()
+                        self.register_version(version,drop_cols=self.cols["drop_cols"],
+                                              cols_maps=self.cols["map_cols"],text_cols=self.cols["text_cols"])
+                        
+            
+            if version not in read_version_names(filename):
+                warnings.warn(f"Version Name : {version}  Not Found  passing out normal data ")
+                self.data =  pd.read_csv(connect(self.filename))
+                self.termination_status =  False 
+            
+            display_Seed_file(filename,not quiet)
+        
+        ## VERSION == NONE + SEED STATUS 
+        elif seed_status ==True and version is None:
+            self.data =  pd.read_csv(connect(self.filename))      
+            display_Seed_file(filename,not quiet)
+        
+        ## NEW DATA 
         else:
             self.data  = pd.read_csv(connect(filename))
-            print_u("SEED FILE IS NOT CONFIGURED YET , CONFIGURE IT USING `register` and `register_version`")
+            warnings.warn("SEED FILE IS NOT CONFIGURED YET , CONFIGURE IT USING `register` and `register_version`")
         
         
         
         
-    def read_data_file(self,filename,version):
+    def read_data_file(self,filename,version,quiet_status=False):
         seed_data = read_seed(filename)[version]
         data = pd.read_csv(connect(filename))
-        data  = dropper(data,seed_data["drop_cols"])
-        data =  mapper(data,seed_data["map_cols"])
-        return data
+        
+        transformations = {
+        "drop_cols": dropper,
+        "map_cols": mapper,
+        "text_cols": text_cleaner }
+        
+        
+        
+        for key,func in transformations.items():
+            if key in seed_data.keys():
+                data =  func(data,seed_data[key],quiet_status)
+                self.cols_status[key] = True 
+                self.cols[key] =  seed_data[key]
+
+        
+        return data 
+
     
     
 
@@ -169,27 +224,42 @@ class load_seed:
     
     def terminate_version(self,vname):
         
-        if vname in read_version_names(self.filename):
+        if self.termination_status and vname != None:
             seed_data = read_seed(self.filename)
             del seed_data[vname]
             seed_data["version_names"] =  [i for i in seed_data["version_names"] if i !=  vname]
             write_seed(self.filename,seed_data)
             return f"{vname} terminated "
+        else:
+            print("Cant terminate version , version : {vanme} not found  or You have passed `None`")
+        
+
+    
     
     def register(self,desc=None):
+        
+        msg = '''
+        data file should be in small case 
+        iris.csv  ❌
+        Iris.csv  ✔
+        '''
         register_csv(self.data,self.filename,desc)
     
     
-    def register_version(self,version,drop_cols=[],cols_maps={}):
+    def register_version(self,version,drop_cols=[],cols_maps={},text_cols=[],exec=True):
         v =  RegisterVersion(self.filename,version)
-        if drop_cols != []:
+        if drop_cols != [] :
             v.drop_cols(drop_cols)
         if cols_maps != {}:
             v.map_cols(cols_maps)
-            
-        print_u("`v.execute()` it after checking new data")
+        if text_cols != []:
+            v.clean_cols(text_cols)
         
-        return v
+        if exec:
+            return v.execute()
+        else:
+            print_u("`v.execute()` it after checking new data")
+
 
 
 

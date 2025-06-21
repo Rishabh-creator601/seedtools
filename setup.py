@@ -6,7 +6,7 @@ from setuptools import setup,find_packages
 
 setup(
     name="seedtools",
-    version="0.1.1",
+    version="0.1.2",
     author="Rashesh",
     author_email="rashesh369@gmail.com",
     packages=find_packages(),

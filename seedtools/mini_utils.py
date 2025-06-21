@@ -1,4 +1,4 @@
-import os ,json
+import os ,json,re,string 
 from .data_path_settings import return_data_path
 from rich import print as rich_print
 
@@ -8,10 +8,6 @@ DATA_PATH= return_data_path()
 
 def print_u(text):
     rich_print(f"[underline]{text}[/underline]")
-    
-    
-    
-    
 
 
 def read_json(file_path):
@@ -43,17 +39,67 @@ def display_recursive(obj):
         else:
             print(i)
 
+def remove_mentions(text):
+    text = re.sub(r'@\S*', '', text)
+    text = re.sub(r'#\S*', '', text)
+    return text
+
+def removing_special_chars(text):
+    pat = r'[^a-zA-z0-9.,!?/:;\"\'\s]'
+    return re.sub(pat,'',text)
+
+def removing_numbers(text):
+    pattern = r'[^a-zA-z.,!?/:;\"\'\s]' 
+    return re.sub(pattern,'',text)
+
+def remove_punctuation(text):
+    return ''.join([c for c in text if c not in string.punctuation])
 
 
-def dropper(df,cols,status="speak"):
-    if status !=  "quiet":
-        print("Dropping Columns:", cols)
+def clean_text(text,apply):
+    text  = str(text).lower()
+    transforms = {"mentions":remove_mentions,
+                  "special_chars":removing_special_chars,
+                  "numbers":removing_numbers,
+                  "puncs":remove_punctuation}
+    if isinstance(apply,list):
+        
+        for application in apply:
+            if application in transforms.keys():
+                text = transforms[application](text)
+            else:
+                print(f"Tranfromation : {application} Not Available")
+    
+    elif isinstance(apply,str) and apply == "all":
+        for application in transforms.keys():
+            text = transforms[application](text)
+
+    else:
+        pass
+    
+    return text 
+        
+        
+        
+
+
+def dropper(df,cols,status=True):
+    quiet_log(f"Dropping Columns: {cols}", status)
     df = df.drop(columns=cols, errors='ignore')
     return df
 
-def mapper(df,cols_map,status="speak"):
-    if status != "quiet":
-        print("Mapped Columns:", list(cols_map.keys()))
+def text_cleaner(df,cols,status=True):
+    quiet_log(f"Processing cols : {cols}",status)
+    for i in cols:
+        try:
+            df[i] = df[i].apply(lambda x :  clean_text(x,apply="all"))
+        except:
+            df[i].values = df[i].values.apply(lambda x :  clean_text(x,apply="all"))
+    return df 
+    
+
+def mapper(df,cols_map,status=True):
+    quiet_log("Mapped Columns: {}".format(list(cols_map.keys())),status)
         
     for (key,maps) in cols_map.items():
         if key in df.columns:
@@ -103,8 +149,9 @@ def update_seed(filename,new_data):
     print("Seed Updated Successfully")
     return True
 
-
-
+def quiet_log(msg,quiet_status=True):
+    if not quiet_status:
+        print(msg)
 
 
 def read_seed_extended(filename):
@@ -114,11 +161,12 @@ def read_seed_extended(filename):
     desc =  data["desc"]
     return (shape,cls,desc)
 
-def display_Seed_file(filename):
-    (shape,cls,desc) =   read_seed_extended(filename)
-    
-    print(f"Shape: {shape}")
-    print(f"Columns: {cls}")
-    print(f"Description: {desc}")
+def display_Seed_file(filename,status=True):
+    if status==True:
+        (shape,cls,desc) =   read_seed_extended(filename)
+        
+        print(f"Shape: {shape}")
+        print(f"Columns: {cls}")
+        print(f"Description: {desc}")
     
     

@@ -16,7 +16,7 @@ def configure_data_path(new_path,create_new_path=True):
          set_key(env_path,"DATA_PATH",new_path)
          print(f"Path setted to : {new_path}")
 
-    if not os.path.exists(new_path) and  create_new_path:
+    elif not os.path.exists(new_path) and  create_new_path:
         Path(new_path).mkdir(parents=True,exist_ok=True)
         set_key(env_path,"DATA_PATH",new_path)
         print(f"Path setted to : {new_path}")

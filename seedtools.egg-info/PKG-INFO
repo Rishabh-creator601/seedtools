@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: seedtools
-Version: 0.1.1
+Version: 0.1.2
 Summary: A lightweight toolkit for loading and managing versioned seed datasets in Python.
 Home-page: https://pypi.org/project/seedtools/
 Author: Rashesh
@@ -36,6 +36,14 @@ pip install seedtools
 
 ```
 
+### SET `Data Path` once and use it anywhere 
+
+``` python
+from seedtools import configure_data_path, reset_path
+
+reset_path() # default path 
+configure_data_path("you path")
+```
 
 ## How to load data from directory 
 
