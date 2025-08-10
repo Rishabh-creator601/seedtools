@@ -1,37 +1,39 @@
-import os 
-from dotenv import load_dotenv,find_dotenv,set_key
+import os
+import json
 from pathlib import Path
 
+CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".seedtools")
+CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
 
-env_path =  os.path.join(os.path.dirname(__file__), ".env")
-load_dotenv(dotenv_path=env_path)
+def _load_config():
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, "r") as f:
+            return json.load(f)
+    return {}
 
+def _save_config(data):
+    os.makedirs(CONFIG_DIR, exist_ok=True)
+    with open(CONFIG_FILE, "w") as f:
+        json.dump(data, f)
 
 def return_data_path():
-    return os.getenv("DATA_PATH")
+    config = _load_config()
+    return config.get("DATA_PATH")
 
-
-def configure_data_path(new_path,create_new_path=True):
+def configure_data_path(new_path, create_new_path=True):
     if os.path.exists(new_path):
-         set_key(env_path,"DATA_PATH",new_path)
-         print(f"Path setted to : {new_path}")
+        _save_config({"DATA_PATH": new_path})
+        print(f"Path set to: {new_path}")
 
-    elif not os.path.exists(new_path) and  create_new_path:
-        Path(new_path).mkdir(parents=True,exist_ok=True)
-        set_key(env_path,"DATA_PATH",new_path)
-        print(f"Path setted to : {new_path}")
-        
+    elif not os.path.exists(new_path) and create_new_path:
+        Path(new_path).mkdir(parents=True, exist_ok=True)
+        _save_config({"DATA_PATH": new_path})
+        print(f"Path set to: {new_path}")
+
     else:
         print("Path not found ... please create that path first")
-            
-        
-        
+
 def reset_path():
-    """
-    os.sep =>  cross platform sep for windows // and for mac \
-        
-    """
-    default_path =  os.path.join(os.path.expanduser("~"), ".data")  # c:/users/<name>/data
+    """Resets to default path in user's home directory."""
+    default_path = os.path.join(os.path.expanduser("~"), ".data")
     configure_data_path(default_path)
-    
-    

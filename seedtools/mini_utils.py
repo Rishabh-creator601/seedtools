@@ -100,14 +100,24 @@ def text_cleaner(df,cols,status=True):
 
 def mapper(df,cols_map,status=True):
     quiet_log("Mapped Columns: {}".format(list(cols_map.keys())),status)
-        
+    mappings =  {}
     for (key,maps) in cols_map.items():
         if key in df.columns:
+            mappings[key] = []
             if maps == "auto":
                 maps = {v: k for k, v in enumerate(df[key].unique())}
+                mappings[key].append(maps)
             df[key] = df[key].map(maps)   
-    return df  
-        
+    return (df  ,mappings)
+
+
+
+def mapper_auto(df,cols,status=True):
+    cols_dict = {}
+    for v in cols:
+        cols_dict[v] = "auto"
+    df,mappings = mapper(df,cols_dict,status)
+    return (df,mappings)        
 
 def connect(filename):
     path_ = os.path.join(DATA_PATH,filename)

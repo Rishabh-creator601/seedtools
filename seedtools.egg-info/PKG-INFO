@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: seedtools
-Version: 0.1.2
+Version: 0.1.4
 Summary: A lightweight toolkit for loading and managing versioned seed datasets in Python.
 Home-page: https://pypi.org/project/seedtools/
 Author: Rashesh
